@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	<canvas id="cv"></canvas>
+	
+	<script src="Fly.js"></script>
+	<script src="Bird.js"></script>
+	<script src="Sky.js"></script>
+	<script src="Land.js"></script>
+	<script src="Pipe.js"></script>
+	<!-- <script src="loadImage.js"></script>
+	<script src="Game.js"></script> -->
+
+	<script>
+		var cv = document.querySelector("#cv");
+		cv.width = 800;
+		cv.height = 600;
+		cv.style.border = "1px solid red";
+		
+		var ctx = cv.getContext("2d");
+		// enjoy！
+		
+		// 所有的图片路径
+		var imgsArr = ["birds", "land", "pipe1", "pipe2", "sky"];
+		// 用来存储游戏中的所有角色
+		var roles = [];
+
+		// 控制游戏的开始和结束
+		var isRuing = false;
+
+		// 调用 loadImages 方法，等到所有图片加载完成了之后，在绘制！
+		Fly.loadImages(imgsArr, function(imgList) {
+			// 让游戏开始
+			isRuing = true;
+
+			// 时间是由 整个世界对象进行控制的！
+			var lastFrameTime = new Date();	// 上一帧绘制的时间
+			var curFrameTime = 0;	// 当前帧绘制的时间
+			var delta = 0;		// 用来计算时间间隔
+			
+			var skyImg = imgList["sky"],
+				landImg = imgList["land"],
+				pipeDownImg = imgList["pipe1"],
+				pipeUpImg = imgList["pipe2"];
+
+
+			// 绘制天空背景
+			for(var i = 0; i < 2; i++) {
+				var sky = new Fly.Sky({
+					ctx: ctx,
+					img: skyImg,
+					x: i * skyImg.width
+				});
+
+				roles.push(sky);
+			}
+			
+			// 绘制管道
+			for(var i = 0; i < 6; i++) {
+				var pipe = new Fly.Pipe({
+					ctx: ctx,
+					imgUp: pipeUpImg,
+					imgDown: pipeDownImg,
+					x: pipeUpImg.width * 3 * i + 300
+				});
+
+				roles.push(pipe);
+			}
+
+			// 绘制陆地背景
+			for(var i = 0; i < 4; i++) {
+				var land = new Fly.Land({
+					ctx: ctx,
+					img: landImg,
+					x: i * landImg.width,
+					y: cv.height - landImg.height
+				});
+
+				roles.push(land);
+			}
+			
+			// 创建小鸟对象
+			var bird = new Fly.Bird({
+				ctx: ctx,
+				img: imgList["birds"]
+			});
+			
+			(function render() {
+				ctx.clearRect(0, 0, cv.width, cv.height);
+				ctx.beginPath();
+
+				// 计算时间
+				curFrameTime = new Date();
+				// 两帧绘制的时间间隔
+				delta = curFrameTime - lastFrameTime;
+				lastFrameTime = curFrameTime;
+
+				// 第一张天空背景的x坐标 天空
+				// sky1.draw();
+				// sky2.draw();
+				roles.forEach(function(role) {
+					role.draw( delta );
+				});
+				
+				// 调用bird的绘制自身的方法
+				bird.draw( delta );
+				
+				// 检测小鸟的碰撞
+				// 1 小鸟飞出了当前画布的上方
+				// 2 小鸟碰到了陆地
+				// 3 小鸟碰到了管道
+				if(bird.y <= 0 || bird.y >= (cv.height - landImg.height) ||
+					ctx.isPointInPath(bird.x, bird.y) ) {
+
+					// 小鸟的中心点坐标，只要在管道的路径中，此时，
+					// ctx.isPointInPath(bird.x, bird.y) 的返回值就是：true
+
+					isRuing = false;
+				}
+
+				
+				if(isRuing) {
+					// 参数为：当前的函数
+					window.requestAnimationFrame(render);
+				}
+			})();
+
+			// 处理单击事件
+			cv.addEventListener("click", function() {
+				bird.speed = -0.3;
+			});
+		});
+	</script>
+</body>
+</html>
